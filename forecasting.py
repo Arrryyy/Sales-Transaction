@@ -3,11 +3,10 @@ from statsmodels.tsa.arima.model import ARIMA
 import matplotlib.pyplot as plt
 import json
 
-# Assuming 'train_data.csv' and 'test_data.csv' are in the current directory
 train_df = pd.read_csv('train_data.csv')
 test_df = pd.read_csv('test_data.csv')
 
-# Load ARIMA parameters
+
 with open('arima_params.json', 'r') as file:
     arima_params = json.load(file)
 
