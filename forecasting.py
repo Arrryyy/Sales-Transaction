@@ -17,25 +17,32 @@ test_df = pd.read_csv('test_data.csv')
 with open('arima_params.json', 'r') as file:
     arima_params = json.load(file)
 
-def forecast_sales(product_code, params, train_df, test_df):
+def forecast_sales(product_code, params, train_df, test_df, period=None):
     test_data_for_product = test_df[test_df['Product_Code'] == product_code]
     if test_data_for_product.empty:
         print(f"No test data for product code {product_code}, cannot forecast.")
         return None
-    
-    forecasting_steps = len(test_data_for_product)
-    # print(f"Forecasting for {forecasting_steps} weeks.")
+
+    forecasting_steps = period if period is not None else len(test_data_for_product)
 
     product_series = train_df[train_df['Product_Code'] == product_code]['Sales']
     if product_series.empty:
-        # print(f"No training data for product code {product_code}, cannot forecast.")
+        print(f"No training data for product code {product_code}, cannot forecast.")
         return None
 
     model = ARIMA(product_series, order=(params[0], params[1], params[2]))
     model_fit = model.fit()
     forecast = model_fit.forecast(steps=forecasting_steps)
     
-    return forecast, test_data_for_product['Week'].tolist()
+    # If 'period' is specified, week indices will be a range from the last observed week plus one to the last observed week plus the period
+    # Otherwise, use the actual weeks from the test data
+    if period is not None:
+        last_observed_week = train_df[train_df['Product_Code'] == product_code]['Week'].max()
+        week_indices = list(range(last_observed_week + 1, last_observed_week + 1 + period))
+    else:
+        week_indices = test_data_for_product['Week'].tolist()
+    
+    return forecast, week_indices
 
 def calculate_accuracy_metric(forecast, actual):
     # Calculate Mean Absolute Error as an example
@@ -92,5 +99,7 @@ def plot_forecast_vs_actual(train_df, test_df, arima_params):
             print(f"Forecasting could not be performed for product code {product_code}.")
     else:
         print(f"No ARIMA parameters found for product code {product_code}.")
-ask_print_closest_accurate_product(closest_product, error)
-plot_forecast_vs_actual(train_df, test_df, arima_params)
+
+if __name__ == "__main__":
+    ask_print_closest_accurate_product(closest_product, error)
+    plot_forecast_vs_actual(train_df, test_df, arima_params)
